@@ -37,12 +37,13 @@ public class MainController {
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
-    public String saveParam(@RequestParam Map<String, String> params) {
+    public String saveParam(@RequestParam Map<String, String> params) throws InterruptedException {
         Document document = new Document();
+        int prior=0;//max value = 5
         for (String key: params.keySet()) {
-            new Thread(){
+            Thread t =new Thread(key){
                 public void run(){
-                    System.out.println("Thread: " + getName() + " running");
+                    System.out.println("Thread " + getName());
                     document.put(key, params.get(key));
                     try{
                         coll.insertOne(document);
@@ -51,9 +52,13 @@ public class MainController {
                         coll.replaceOne(eq("_id",document.getObjectId("_id")),document);
                     }
                 }
-            }.start();
-
+            };
+            t.setPriority(Thread.MAX_PRIORITY-prior);
+            t.start();
+            Thread.sleep(500);
+            prior++;
         }
+        System.out.println("----------------------");
         return "add_form";
     }
 
