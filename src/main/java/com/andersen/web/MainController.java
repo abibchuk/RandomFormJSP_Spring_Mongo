@@ -1,6 +1,7 @@
 package com.andersen.web;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -15,12 +16,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
 
+import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Projections.excludeId;
 
 
 @Controller
 public class MainController {
-
 
     MongoClient mongo = new MongoClient();
     MongoDatabase db = mongo.getDatabase("mydb");
@@ -38,9 +39,21 @@ public class MainController {
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     public String saveParam(@RequestParam Map<String, String> params) {
         Document document = new Document();
-        for (String key: params.keySet())
-            document.put(key, params.get(key));
-        coll.insertOne(document);
+        for (String key: params.keySet()) {
+            new Thread(){
+                public void run(){
+                    System.out.println("Thread: " + getName() + " running");
+                    document.put(key, params.get(key));
+                    try{
+                        coll.insertOne(document);
+                    }
+                    catch (MongoWriteException ex){
+                        coll.replaceOne(eq("_id",document.getObjectId("_id")),document);
+                    }
+                }
+            }.start();
+
+        }
         return "add_form";
     }
 

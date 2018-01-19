@@ -9,7 +9,7 @@
 <body>
 <form:form method="POST" action="/add">
     <table>
-        <c:forEach var = "i" begin = "0" end = "${random.nextInt(4)}">
+        <c:forEach var = "i" begin = "0" end = "${random.nextInt(5)}">
                 <tr>
                     <td>Param${i}:</td>
                     <td><input type = "text" name = "param${i}" /></td>
