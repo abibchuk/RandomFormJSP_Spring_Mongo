@@ -15,6 +15,10 @@ import org.springframework.web.servlet.ModelAndView;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Projections.excludeId;
@@ -37,13 +41,13 @@ public class MainController {
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
-    public String saveParam(@RequestParam Map<String, String> params) throws InterruptedException {
+    public String saveParam(@RequestParam Map<String, String> params) throws InterruptedException, ExecutionException {
         Document document = new Document();
-        int prior=0;//max value = 5
-        for (String key: params.keySet()) {
-            Thread t =new Thread(key){
-                public void run(){
-                    System.out.println("Thread " + getName());
+        ExecutorService executorService = Executors.newFixedThreadPool(params.size());
+        for (String key: params.keySet()){
+            Future future = executorService.submit(new Runnable() {
+                public void run() {
+                    System.out.println("Thread " + Thread.currentThread().getName());
                     document.put(key, params.get(key));
                     try{
                         coll.insertOne(document);
@@ -52,13 +56,10 @@ public class MainController {
                         coll.replaceOne(eq("_id",document.getObjectId("_id")),document);
                     }
                 }
-            };
-            t.setPriority(Thread.MAX_PRIORITY-prior);
-            t.start();
-            Thread.sleep(500);
-            prior++;
+            });
+            future.get();
         }
-        System.out.println("----------------------");
+        executorService.shutdown();
         return "add_form";
     }
 
